@@ -576,7 +576,7 @@ local function applyDefaultClothing(targetModel: Model)
 
 	-- Удаляем старую одежду, если есть
 	for _, item in ipairs(targetModel:GetChildren()) do
-		if item:IsA("Shirt") or item:IsA("Pants") then
+		if item:IsA("Shirt") or item:IsA("Pants") or item:IsA("ShirtGraphic") then
 			item:Destroy()
 		end
 	end

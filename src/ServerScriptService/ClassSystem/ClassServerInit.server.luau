@@ -88,16 +88,21 @@ local function OnCharacterSpawned(player: Player, character: Model)
 	if character:IsDescendantOf(workspace) then
 		task.wait(0.2) -- Даём движку Roblox время на инициализацию Backpack
 
-		-- 0. Проверяем наличие базовой одежды новичка из ReplicatedStorage.DefaultClothing
+		-- 0. Принудительно применяем базовые лохмотья новичка из ReplicatedStorage.DefaultClothing
 		local defaultClothing = ReplicatedStorage:FindFirstChild("DefaultClothing")
 		if defaultClothing and character then
-			if not character:FindFirstChildOfClass("Shirt") then
-				local shirt = defaultClothing:FindFirstChildOfClass("Shirt")
-				if shirt then shirt:Clone().Parent = character end
+			for _, item in ipairs(character:GetChildren()) do
+				if item:IsA("Shirt") or item:IsA("Pants") or item:IsA("ShirtGraphic") then
+					item:Destroy()
+				end
 			end
-			if not character:FindFirstChildOfClass("Pants") then
-				local pants = defaultClothing:FindFirstChildOfClass("Pants")
-				if pants then pants:Clone().Parent = character end
+			local shirtTemplate = defaultClothing:FindFirstChildOfClass("Shirt")
+			if shirtTemplate then
+				shirtTemplate:Clone().Parent = character
+			end
+			local pantsTemplate = defaultClothing:FindFirstChildOfClass("Pants")
+			if pantsTemplate then
+				pantsTemplate:Clone().Parent = character
 			end
 		end
 

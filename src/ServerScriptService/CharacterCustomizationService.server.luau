@@ -164,23 +164,34 @@ end
 -- =================================================================
 -- 3. ОБРАБОТКА СПАВНА И ЗАМОРОЗКА ПРИ ПЕРВОМ ВХОДЕ
 -- =================================================================
-local function EnsureDefaultClothing(character: Model)
+local function applyStarterClothing(character: Model)
 	local defaultClothing = ReplicatedStorage:FindFirstChild("DefaultClothing")
-	if defaultClothing and character then
-		if not character:FindFirstChildOfClass("Shirt") then
-			local shirt = defaultClothing:FindFirstChildOfClass("Shirt")
-			if shirt then shirt:Clone().Parent = character end
+	if not defaultClothing then return end
+
+	-- 1. Удаляем личную одежду и футболки аватара игрока
+	for _, item in ipairs(character:GetChildren()) do
+		if item:IsA("Shirt") or item:IsA("Pants") or item:IsA("ShirtGraphic") then
+			item:Destroy()
 		end
-		if not character:FindFirstChildOfClass("Pants") then
-			local pants = defaultClothing:FindFirstChildOfClass("Pants")
-			if pants then pants:Clone().Parent = character end
-		end
+	end
+
+	-- 2. Надеваем базовые Shirt и Pants из ReplicatedStorage.DefaultClothing
+	local shirtTemplate = defaultClothing:FindFirstChildOfClass("Shirt")
+	if shirtTemplate then
+		local newShirt = shirtTemplate:Clone()
+		newShirt.Parent = character
+	end
+
+	local pantsTemplate = defaultClothing:FindFirstChildOfClass("Pants")
+	if pantsTemplate then
+		local newPants = pantsTemplate:Clone()
+		newPants.Parent = character
 	end
 end
 
 local function OnCharacterSpawned(player: Player, character: Model)
-	-- Проверяем наличие базовой одежды новичка сразу при спавне модели
-	EnsureDefaultClothing(character)
+	-- Принудительно очищаем одежду аватара и надеваем базовые лохмотья
+	applyStarterClothing(character)
 
 	local data = ClassDataManager.WaitUntilLoaded(player, 10)
 	if not data then return end
@@ -188,8 +199,9 @@ local function OnCharacterSpawned(player: Player, character: Model)
 	local humanoid = character:WaitForChild("Humanoid", 10) :: Humanoid?
 	if not humanoid then return end
 
-	-- Повторная проверка одежды после готовности Humanoid
-	EnsureDefaultClothing(character)
+	-- Задержка task.wait(0.1) для перехвата асинхронного применения одежды движком
+	task.wait(0.1)
+	applyStarterClothing(character)
 
 	local isCreated = ClassDataManager.IsCharacterCreated(player)
 
@@ -214,8 +226,8 @@ local function OnCharacterSpawned(player: Player, character: Model)
 				local app = ClassDataManager.GetAppearance(player)
 				CharacterCustomizationConfig.ApplyAppearanceToCharacter(character, app, data.SelectedClass)
 
-				-- Гарантируем наличие базовой одежды после применения внешности
-				EnsureDefaultClothing(character)
+				-- Принудительно гарантируем лохмотья новичка после применения кастомизации
+				applyStarterClothing(character)
 
 				character:SetAttribute("SelectedClass", data.SelectedClass)
 				character:SetAttribute("Class", data.SelectedClass)
@@ -240,13 +252,25 @@ end
 
 local function SetupPlayer(player: Player)
 	player.CharacterAdded:Connect(function(character)
-		EnsureDefaultClothing(character)
+		applyStarterClothing(character)
+
+		-- Перехват отложенной подгрузки веб-одежды аватара движком Roblox
+		task.delay(0.1, function()
+			if character:IsDescendantOf(workspace) then
+				applyStarterClothing(character)
+			end
+		end)
+
 		OnCharacterSpawned(player, character)
+	end)
+
+	player.CharacterAppearanceLoaded:Connect(function(character)
+		applyStarterClothing(character)
 	end)
 
 	if player.Character then
 		task.spawn(function()
-			EnsureDefaultClothing(player.Character)
+			applyStarterClothing(player.Character)
 			OnCharacterSpawned(player, player.Character)
 		end)
 	end
