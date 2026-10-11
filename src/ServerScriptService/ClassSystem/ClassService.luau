@@ -103,8 +103,21 @@ function ClassService.PerformFullCharacterReset(player: Player)
 		end
 
 		for _, item in ipairs(character:GetChildren()) do
-			if item:IsA("Accessory") or item:IsA("Shirt") or item:IsA("Pants") then
+			if item:IsA("Accessory") then
 				item:Destroy()
+			end
+		end
+
+		-- Одежда новичка должна оставаться надетой при сбросе (/reset)
+		local defaultClothing = ReplicatedStorage:FindFirstChild("DefaultClothing")
+		if defaultClothing then
+			if not character:FindFirstChildOfClass("Shirt") then
+				local shirt = defaultClothing:FindFirstChildOfClass("Shirt")
+				if shirt then shirt:Clone().Parent = character end
+			end
+			if not character:FindFirstChildOfClass("Pants") then
+				local pants = defaultClothing:FindFirstChildOfClass("Pants")
+				if pants then pants:Clone().Parent = character end
 			end
 		end
 

@@ -569,6 +569,32 @@ local function applyHair(charModel: Model, hairTemplate: Accessory?, hairColor: 
 	hairClone.Parent = charModel
 end
 
+-- 3.2. Базовая одежда новичка (DefaultClothing)
+local function applyDefaultClothing(targetModel: Model)
+	local defaultClothingFolder = ReplicatedStorage:FindFirstChild("DefaultClothing")
+	if not defaultClothingFolder then return end
+
+	-- Удаляем старую одежду, если есть
+	for _, item in ipairs(targetModel:GetChildren()) do
+		if item:IsA("Shirt") or item:IsA("Pants") then
+			item:Destroy()
+		end
+	end
+
+	-- Клонируем Shirt и Pants из папки шаблона
+	local shirtTemplate = defaultClothingFolder:FindFirstChildOfClass("Shirt")
+	if shirtTemplate then
+		local newShirt = shirtTemplate:Clone()
+		newShirt.Parent = targetModel
+	end
+
+	local pantsTemplate = defaultClothingFolder:FindFirstChildOfClass("Pants")
+	if pantsTemplate then
+		local newPants = pantsTemplate:Clone()
+		newPants.Parent = targetModel
+	end
+end
+
 -- 4. Комплексное обновление превью модели
 local function updatePreviewModel()
 	if not previewModel then return end
@@ -637,24 +663,29 @@ local function updatePreviewModel()
 	local hairColorOpt = CharacterCustomizationConfig.GetHairColor(currentAppearance.HairColorIndex)
 	applyHair(previewModel, hairTemplate, hairColorOpt.Color)
 
-	-- 5. Стартовая одежда класса (Shirt / Pants)
-	local outfit = CharacterCustomizationConfig.GetClassOutfit(selectedClass)
-	if outfit then
-		local shirt = previewModel:FindFirstChildOfClass("Shirt")
-		if not shirt then
-			shirt = Instance.new("Shirt")
-			shirt.Name = "ClassShirt"
-			shirt.Parent = previewModel
-		end
-		shirt.ShirtTemplate = outfit.Shirt
+	-- 5. Базовая одежда новичка (DefaultClothing) с fallback на одежду класса
+	local defaultClothingFolder = ReplicatedStorage:FindFirstChild("DefaultClothing")
+	if defaultClothingFolder then
+		applyDefaultClothing(previewModel)
+	else
+		local outfit = CharacterCustomizationConfig.GetClassOutfit(selectedClass)
+		if outfit then
+			local shirt = previewModel:FindFirstChildOfClass("Shirt")
+			if not shirt then
+				shirt = Instance.new("Shirt")
+				shirt.Name = "ClassShirt"
+				shirt.Parent = previewModel
+			end
+			shirt.ShirtTemplate = outfit.Shirt
 
-		local pants = previewModel:FindFirstChildOfClass("Pants")
-		if not pants then
-			pants = Instance.new("Pants")
-			pants.Name = "ClassPants"
-			pants.Parent = previewModel
+			local pants = previewModel:FindFirstChildOfClass("Pants")
+			if not pants then
+				pants = Instance.new("Pants")
+				pants.Name = "ClassPants"
+				pants.Parent = previewModel
+			end
+			pants.PantsTemplate = outfit.Pants
 		end
-		pants.PantsTemplate = outfit.Pants
 	end
 
 	-- 6. Сохранение текущего угла поворота модели
@@ -1321,6 +1352,9 @@ local function setupPreviewModel()
 	-- Помещаем клон внутрь WorldModel в ViewportFrame
 	clone.Parent = worldModel
 	previewModel = clone
+
+	-- Применяем базовую одежду новичка из DefaultClothing
+	applyDefaultClothing(clone)
 
 	-- Задаем позицию модели: HumanoidRootPart.CFrame = CFrame.new(0, 0, 0)
 	local hrp = clone:FindFirstChild("HumanoidRootPart") :: BasePart?

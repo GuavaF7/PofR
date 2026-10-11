@@ -369,8 +369,18 @@ function CharacterCustomizationConfig.ApplyAppearanceToCharacter(
 		end
 	end
 
-	-- 4. Одежда класса (Shirt / Pants)
-	if className and className ~= "" and className ~= "None" then
+	-- 4. Одежда (DefaultClothing или одежда класса)
+	local defaultClothing = ReplicatedStorage:FindFirstChild("DefaultClothing")
+	if defaultClothing then
+		if not character:FindFirstChildOfClass("Shirt") then
+			local shirt = defaultClothing:FindFirstChildOfClass("Shirt")
+			if shirt then shirt:Clone().Parent = character end
+		end
+		if not character:FindFirstChildOfClass("Pants") then
+			local pants = defaultClothing:FindFirstChildOfClass("Pants")
+			if pants then pants:Clone().Parent = character end
+		end
+	elseif className and className ~= "" and className ~= "None" then
 		local outfit = CharacterCustomizationConfig.GetClassOutfit(className)
 		if outfit then
 			local shirt = character:FindFirstChildOfClass("Shirt")

@@ -164,12 +164,32 @@ end
 -- =================================================================
 -- 3. ОБРАБОТКА СПАВНА И ЗАМОРОЗКА ПРИ ПЕРВОМ ВХОДЕ
 -- =================================================================
+local function EnsureDefaultClothing(character: Model)
+	local defaultClothing = ReplicatedStorage:FindFirstChild("DefaultClothing")
+	if defaultClothing and character then
+		if not character:FindFirstChildOfClass("Shirt") then
+			local shirt = defaultClothing:FindFirstChildOfClass("Shirt")
+			if shirt then shirt:Clone().Parent = character end
+		end
+		if not character:FindFirstChildOfClass("Pants") then
+			local pants = defaultClothing:FindFirstChildOfClass("Pants")
+			if pants then pants:Clone().Parent = character end
+		end
+	end
+end
+
 local function OnCharacterSpawned(player: Player, character: Model)
+	-- Проверяем наличие базовой одежды новичка сразу при спавне модели
+	EnsureDefaultClothing(character)
+
 	local data = ClassDataManager.WaitUntilLoaded(player, 10)
 	if not data then return end
 
 	local humanoid = character:WaitForChild("Humanoid", 10) :: Humanoid?
 	if not humanoid then return end
+
+	-- Повторная проверка одежды после готовности Humanoid
+	EnsureDefaultClothing(character)
 
 	local isCreated = ClassDataManager.IsCharacterCreated(player)
 
@@ -194,6 +214,9 @@ local function OnCharacterSpawned(player: Player, character: Model)
 				local app = ClassDataManager.GetAppearance(player)
 				CharacterCustomizationConfig.ApplyAppearanceToCharacter(character, app, data.SelectedClass)
 
+				-- Гарантируем наличие базовой одежды после применения внешности
+				EnsureDefaultClothing(character)
+
 				character:SetAttribute("SelectedClass", data.SelectedClass)
 				character:SetAttribute("Class", data.SelectedClass)
 				character:SetAttribute("IsCharacterCreated", true)
@@ -217,11 +240,13 @@ end
 
 local function SetupPlayer(player: Player)
 	player.CharacterAdded:Connect(function(character)
+		EnsureDefaultClothing(character)
 		OnCharacterSpawned(player, character)
 	end)
 
 	if player.Character then
 		task.spawn(function()
+			EnsureDefaultClothing(player.Character)
 			OnCharacterSpawned(player, player.Character)
 		end)
 	end

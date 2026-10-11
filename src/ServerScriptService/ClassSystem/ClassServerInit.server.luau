@@ -88,6 +88,19 @@ local function OnCharacterSpawned(player: Player, character: Model)
 	if character:IsDescendantOf(workspace) then
 		task.wait(0.2) -- Даём движку Roblox время на инициализацию Backpack
 
+		-- 0. Проверяем наличие базовой одежды новичка из ReplicatedStorage.DefaultClothing
+		local defaultClothing = ReplicatedStorage:FindFirstChild("DefaultClothing")
+		if defaultClothing and character then
+			if not character:FindFirstChildOfClass("Shirt") then
+				local shirt = defaultClothing:FindFirstChildOfClass("Shirt")
+				if shirt then shirt:Clone().Parent = character end
+			end
+			if not character:FindFirstChildOfClass("Pants") then
+				local pants = defaultClothing:FindFirstChildOfClass("Pants")
+				if pants then pants:Clone().Parent = character end
+			end
+		end
+
 		-- 1. Применяем итоговые характеристики (класс + прокачанные узлы дерева)
 		StatCalculationService.ApplyToCharacter(player)
 
